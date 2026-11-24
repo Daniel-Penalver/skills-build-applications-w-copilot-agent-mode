@@ -30,11 +30,15 @@ async function createUserAndTeam(name: string, email: string, mascot: string, te
 describe('OctoFit API contract', () => {
   it('creates and lists valid activities while rejecting invalid input', async () => {
     const { user, team } = await createUserAndTeam('Mona', 'mona@example.com', 'Mona');
+    const { team: unrelatedTeam } = await createUserAndTeam('Hubot', 'hubot@example.com', 'Hubot');
     const invalid = await request(app).post('/api/activities').send({});
     expect(invalid.status).toBe(400);
     const missingReferences = await request(app).post('/api/activities').send({ userId: new mongoose.Types.ObjectId().toString(), teamId: new mongoose.Types.ObjectId().toString(), type: 'run', minutes: 30 });
     expect(missingReferences.status).toBeGreaterThanOrEqual(400);
     expect(missingReferences.status).toBeLessThan(500);
+    const mismatchedReferences = await request(app).post('/api/activities').send({ userId: user._id.toString(), teamId: unrelatedTeam._id.toString(), type: 'run', minutes: 30 });
+    expect(mismatchedReferences.status).toBe(400);
+    expect(await Activity.countDocuments()).toBe(0);
     for (const malformed of [{ userId: 'not-an-id', teamId: team._id.toString() }, { userId: user._id.toString(), teamId: 'not-an-id' }]) {
       const response = await request(app).post('/api/activities').send({ ...malformed, type: 'run', minutes: 30 });
       expect(response.status).toBeGreaterThanOrEqual(400);

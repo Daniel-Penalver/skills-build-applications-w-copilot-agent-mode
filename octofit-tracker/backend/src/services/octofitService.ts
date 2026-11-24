@@ -25,7 +25,7 @@ export async function createActivity(input: unknown) {
   }
 
   const [user, team] = await Promise.all([
-    User.exists({ _id: userId }),
+    User.exists({ _id: userId, team: teamId }),
     Team.exists({ _id: teamId }),
   ]);
   if (!user || !team) throw invalidInput();
